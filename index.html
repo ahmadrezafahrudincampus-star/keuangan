@@ -579,6 +579,18 @@
           <div class="account-email">catatan.uang@personal</div>
         </div>
 
+        <!-- WhatsApp Bot URL Settings Card -->
+        <div class="card" style="margin: 0 20px 16px; padding: 16px;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 8px">Pengaturan WhatsApp Bot</div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" class="input-field" id="wa-bot-url" placeholder="http://localhost:3001" style="flex: 1; margin: 0; padding: 8px 12px; font-size: 13px;">
+            <button class="btn-primary" onclick="saveWaBotUrl()" style="padding: 0 16px; margin: 0; font-size: 13px;">Simpan</button>
+          </div>
+          <div style="font-size: 10px; color: var(--gray-400); margin-top: 6px; line-height: 1.4;">
+            Masukkan URL WhatsApp Bot (contoh: <code>https://sixty-radios-drum.loca.lt</code>) agar notifikasi transaksi instan dikirim ke HP Anda.
+          </div>
+        </div>
+
         <div class="settings-list">
           <div class="settings-item" onclick="navigateTo('screen-whatsapp')">
             <div class="settings-icon" style="background:#D1FAE5;color:#059669">

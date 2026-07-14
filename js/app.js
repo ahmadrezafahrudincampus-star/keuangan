@@ -522,6 +522,24 @@ function saveTransaction() {
           saveTransactionsToDB(transactions);
         }
         showToast('Transaksi tersimpan & sinkron!', 'success');
+
+        // Send WA Notification
+        const waBotUrl = localStorage.getItem('wa_bot_url');
+        if (waBotUrl) {
+          fetch(waBotUrl + '/notify/new-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jenis: tx.jenis,
+              kategori: tx.kategori,
+              keterangan: tx.keterangan,
+              nominal: tx.nominal,
+              tanggal: tx.tanggal,
+              jam: (tx.jam || '').substring(0, 5),
+              saldoSaatIni: data.data.saldoSaatIni || 0
+            })
+          }).catch(err => console.warn('WA notification error:', err));
+        }
       }
     }).catch(() => {
       addPendingTransaction(tx);
@@ -1342,6 +1360,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupDateInputs();
   setupNominalInputs();
 
+  // Load WA Bot URL in settings
+  const waBotUrlVal = localStorage.getItem('wa_bot_url') || '';
+  const waBotInput = document.getElementById('wa-bot-url');
+  if (waBotInput) waBotInput.value = waBotUrlVal;
+
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW registration failed:', e));
@@ -1466,3 +1489,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 });
+
+function saveWaBotUrl() {
+  const url = document.getElementById('wa-bot-url').value.trim();
+  localStorage.setItem('wa_bot_url', url);
+  showToast('URL WhatsApp Bot berhasil disimpan!', 'success');
+}
