@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#16A34A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Catatan Uang — Aplikasi pencatatan keuangan pribadi yang simple dan modern">
+  <title>Catatan Uang — Personal Finance Tracker</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316A34A'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-size='20' fill='white'%3E💰%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%2316A34A'/%3E%3Cpath d='M56 56h68a17 17 0 0117 17v34a17 17 0 01-17 17H56a17 17 0 01-17-17V73a17 17 0 0117-17z' fill='none' stroke='white' stroke-width='8'/%3E%3Ccircle cx='112' cy='90' r='8' fill='white'/%3E%3C/svg%3E">
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (Local Vendor) -->
+  <script src="js/vendor/lucide.min.js"></script>
+
+  <!-- Chart.js (Local Vendor) -->
+  <script src="js/vendor/chart.umd.min.js"></script>
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-content" id="app-content">
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: BERANDA -->
+      <!-- ============================================================ -->
+      <div class="screen active" id="screen-beranda">
+        <!-- Header -->
+        <div class="screen-header">
+          <span class="header-title">Catatan Uang</span>
+          <button class="icon-btn" onclick="navigateTo('screen-whatsapp')" aria-label="Notifikasi">
+            <i data-lucide="bell" style="width:20px;height:20px;color:var(--gray-500)"></i>
+          </button>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="balance-card">
+          <div class="balance-label">Saldo Saat Ini</div>
+          <div class="balance-amount" id="saldo-amount">Rp0</div>
+          <div class="summary-row">
+            <div class="summary-card">
+              <div class="summary-icon"><i data-lucide="trending-up" style="width:16px;height:16px"></i></div>
+              <div class="summary-label">Pemasukan Bulan Ini</div>
+              <div class="summary-amount" id="pemasukan-amount">Rp0</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon"><i data-lucide="trending-down" style="width:16px;height:16px"></i></div>
+              <div class="summary-label">Pengeluaran Bulan Ini</div>
+              <div class="summary-amount" id="pengeluaran-amount">Rp0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <div class="quick-action-item" onclick="navigateTo('screen-tambah')">
+            <div class="quick-action-icon">
+              <i data-lucide="plus-circle" style="width:22px;height:22px"></i>
+            </div>
+            <span class="quick-action-label">Tambah</span>
+          </div>
+          <div class="quick-action-item" onclick="navigateTo('screen-rekap')">
+            <div class="quick-action-icon">
+              <i data-lucide="bar-chart-3" style="width:22px;height:22px"></i>
+            </div>
+            <span class="quick-action-label">Rekap</span>
+          </div>
+          <div class="quick-action-item" onclick="navigateTo('screen-statistik')">
+            <div class="quick-action-icon">
+              <i data-lucide="pie-chart" style="width:22px;height:22px"></i>
+            </div>
+            <span class="quick-action-label">Statistik</span>
+          </div>
+          <div class="quick-action-item" onclick="navigateTo('screen-whatsapp')">
+            <div class="quick-action-icon" style="background:#D1FAE5;color:#059669">
+              <i data-lucide="message-circle" style="width:22px;height:22px"></i>
+            </div>
+            <span class="quick-action-label">WhatsApp</span>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-bar">
+          <span class="status-dot online" id="status-dot"></span>
+          <span id="status-text">Online</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--gray-400)" id="sync-time"></span>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="section-header">
+          <span class="section-title">Transaksi Terakhir</span>
+          <button class="section-action lihat-semua" id="btn-lihat-semua">Lihat Semua</button>
+        </div>
+        <div class="transaction-list" id="recent-transactions">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: TRANSAKSI (Semua) -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-transaksi">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-beranda">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Semua Transaksi</span>
+          <button class="icon-btn" id="btn-open-filter" onclick="openFilterModal()" aria-label="Filter">
+            <i data-lucide="sliders-horizontal" style="width:20px;height:20px;color:var(--gray-500)"></i>
+          </button>
+        </div>
+        <!-- Search Bar -->
+        <div class="search-bar-container">
+          <i data-lucide="search" style="width:16px;height:16px;color:var(--gray-400);position:absolute;left:28px;top:50%;transform:translateY(-50%)"></i>
+          <input type="text" class="search-input" id="search-input" placeholder="Cari transaksi...">
+        </div>
+        <div id="transaction-list-full" style="padding-bottom:20px">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: TAMBAH TRANSAKSI -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-tambah">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-beranda">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Tambah Transaksi</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <!-- Toggle Pengeluaran / Pemasukan -->
+        <div class="toggle-group">
+          <button class="toggle-btn active expense" data-type="Pengeluaran">Pengeluaran</button>
+          <button class="toggle-btn income" data-type="Pemasukan">Pemasukan</button>
+        </div>
+
+        <!-- Form -->
+        <div class="form-section">
+          <div class="form-group">
+            <label class="form-label">Kategori</label>
+            <select class="input-field" id="input-kategori">
+              <option value="">Pilih Kategori</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Keterangan</label>
+            <input type="text" class="input-field" id="input-keterangan" placeholder="Contoh: Makan siang">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nominal</label>
+            <div class="nominal-input">
+              <span class="nominal-prefix">Rp</span>
+              <input type="number" class="input-field" id="input-nominal" placeholder="0" inputmode="numeric">
+            </div>
+          </div>
+          <div class="input-row">
+            <div class="form-group">
+              <label class="form-label">Tanggal</label>
+              <input type="date" class="input-field" id="input-tanggal">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Jam</label>
+              <input type="time" class="input-field" id="input-jam">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catatan <span style="color:var(--gray-400);font-weight:400">(opsional)</span></label>
+            <input type="text" class="input-field" id="input-catatan" placeholder="Catatan tambahan...">
+          </div>
+          <button class="btn-primary" id="btn-simpan" style="margin-top:8px">
+            <i data-lucide="check" style="width:18px;height:18px;vertical-align:middle;margin-right:6px"></i>
+            SIMPAN
+          </button>
+        </div>
+
+        <!-- Quick Categories -->
+        <div class="quick-categories">
+          <div class="quick-categories-title">Kategori Cepat</div>
+          <div class="quick-categories-grid">
+            <div class="quick-cat-item" data-kategori="Makanan & Minuman">
+              <div class="quick-cat-icon" style="background:#FEF3C7;color:#D97706"><i data-lucide="utensils" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Makan</span>
+            </div>
+            <div class="quick-cat-item" data-kategori="Transportasi">
+              <div class="quick-cat-icon" style="background:#DBEAFE;color:#2563EB"><i data-lucide="car" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Transport</span>
+            </div>
+            <div class="quick-cat-item" data-kategori="Belanja">
+              <div class="quick-cat-icon" style="background:#FCE7F3;color:#DB2777"><i data-lucide="shopping-bag" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Belanja</span>
+            </div>
+            <div class="quick-cat-item" data-kategori="Tagihan">
+              <div class="quick-cat-icon" style="background:#EDE9FE;color:#7C3AED"><i data-lucide="receipt" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Tagihan</span>
+            </div>
+            <div class="quick-cat-item" data-kategori="Rokok">
+              <div class="quick-cat-icon" style="background:#FEE2E2;color:#DC2626"><i data-lucide="flame" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Rokok</span>
+            </div>
+            <div class="quick-cat-item" data-kategori="Hiburan">
+              <div class="quick-cat-icon" style="background:#D1FAE5;color:#059669"><i data-lucide="music" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Hiburan</span>
+            </div>
+            <div class="quick-cat-item" data-kategori="Kesehatan">
+              <div class="quick-cat-icon" style="background:#FFEDD5;color:#EA580C"><i data-lucide="heart" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Sehat</span>
+            </div>
+            <div class="quick-cat-item" data-kategori="Lainnya">
+              <div class="quick-cat-icon" style="background:#F3F4F6;color:#6B7280"><i data-lucide="more-horizontal" style="width:20px;height:20px"></i></div>
+              <span class="quick-cat-label">Lainnya</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: EDIT TRANSAKSI -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-edit-transaksi">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-transaksi">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Edit Transaksi</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <input type="hidden" id="edit-transaction-id">
+
+        <!-- Toggle Pengeluaran / Pemasukan -->
+        <div class="toggle-group" id="edit-toggle-group">
+          <button class="toggle-btn active expense" data-type="Pengeluaran">Pengeluaran</button>
+          <button class="toggle-btn income" data-type="Pemasukan">Pemasukan</button>
+        </div>
+
+        <!-- Form -->
+        <div class="form-section">
+          <div class="form-group">
+            <label class="form-label">Kategori</label>
+            <select class="input-field" id="edit-kategori">
+              <option value="">Pilih Kategori</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Keterangan</label>
+            <input type="text" class="input-field" id="edit-keterangan" placeholder="Contoh: Makan siang">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nominal</label>
+            <div class="nominal-input">
+              <span class="nominal-prefix">Rp</span>
+              <input type="number" class="input-field" id="edit-nominal" placeholder="0" inputmode="numeric">
+            </div>
+          </div>
+          <div class="input-row">
+            <div class="form-group">
+              <label class="form-label">Tanggal</label>
+              <input type="date" class="input-field" id="edit-tanggal">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Jam</label>
+              <input type="time" class="input-field" id="edit-jam">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catatan <span style="color:var(--gray-400);font-weight:400">(opsional)</span></label>
+            <input type="text" class="input-field" id="edit-catatan" placeholder="Catatan tambahan...">
+          </div>
+          <div class="edit-actions">
+            <button class="btn-primary" id="btn-save-edit" style="flex:1">
+              <i data-lucide="check" style="width:18px;height:18px;vertical-align:middle;margin-right:6px"></i>
+              SIMPAN PERUBAHAN
+            </button>
+            <button class="btn-delete" id="btn-delete-edit">
+              <i data-lucide="trash-2" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"></i>
+              HAPUS
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: REKAP -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-rekap">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-beranda">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Rekap</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar" id="rekap-tabs">
+          <button class="tab-item active" data-tab="hariIni">Hari Ini</button>
+          <button class="tab-item" data-tab="mingguIni">Minggu Ini</button>
+          <button class="tab-item" data-tab="bulanIni">Bulan Ini</button>
+          <button class="tab-item" data-tab="custom">Custom</button>
+        </div>
+
+        <!-- Calendar Strip (for Hari Ini) -->
+        <div class="calendar-strip" id="calendar-strip">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Rekap Content -->
+        <div id="rekap-content">
+          <!-- Rendered by JS based on active tab -->
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: DETAIL HARIAN -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-detail-harian">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-rekap">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Detail Hari Ini</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <!-- Green Card -->
+        <div class="rekap-card green">
+          <div class="rekap-label">Total Pengeluaran</div>
+          <div class="rekap-amount" id="detail-harian-total">Rp0</div>
+          <div class="rekap-count" id="detail-harian-count">0 Transaksi</div>
+        </div>
+
+        <div class="section-header" style="padding-top:0">
+          <span class="section-title" id="detail-harian-date">Hari Ini</span>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline" id="detail-harian-timeline">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Total Bar -->
+        <div class="total-bar" id="detail-harian-totalbar">
+          <span class="total-label">Total</span>
+          <span class="total-amount" id="detail-harian-totalbar-amount">Rp0</span>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: REKAP MINGGUAN -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-rekap-mingguan">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-rekap">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Rekap Minggu Ini</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <!-- Blue Card -->
+        <div class="rekap-card blue">
+          <div class="rekap-period" id="weekly-period">Minggu Ini</div>
+          <div class="rekap-label">Total Pengeluaran</div>
+          <div class="rekap-amount" id="weekly-total">Rp0</div>
+          <div class="rekap-count" id="weekly-count">0 Transaksi</div>
+        </div>
+
+        <div class="section-header" style="padding-top:0">
+          <span class="section-title">Ringkasan Kategori</span>
+        </div>
+
+        <div class="category-list" id="weekly-categories">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: REKAP BULANAN -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-rekap-bulanan">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-rekap">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Rekap Bulan Ini</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <!-- Purple Card -->
+        <div class="rekap-card purple">
+          <div class="rekap-period" id="monthly-period">Bulan Ini</div>
+          <div class="rekap-label">Total Pengeluaran</div>
+          <div class="rekap-amount" id="monthly-total">Rp0</div>
+          <div class="rekap-count" id="monthly-count">0 Transaksi</div>
+        </div>
+
+        <div class="section-header" style="padding-top:0">
+          <span class="section-title">Ringkasan Kategori</span>
+        </div>
+
+        <div class="category-list" id="monthly-categories">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Mini Chart -->
+        <div class="chart-container" style="margin-top:8px">
+          <div class="chart-header">
+            <span class="chart-title">Tren Pengeluaran</span>
+          </div>
+          <canvas id="chart-monthly-trend" height="160"></canvas>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: REKAP CUSTOM -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-rekap-custom">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-rekap">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Rekap Custom</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <div class="card" style="margin:0 20px 16px">
+          <div style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px">Pilih Rentang Tanggal</div>
+          <div class="date-input-row" style="padding:0">
+            <div class="date-input-group">
+              <label class="date-input-label">Dari Tanggal</label>
+              <input type="date" class="input-field" id="custom-start-date">
+            </div>
+            <div class="date-input-group">
+              <label class="date-input-label">Sampai Tanggal</label>
+              <input type="date" class="input-field" id="custom-end-date">
+            </div>
+          </div>
+          <button class="btn-primary" id="btn-custom-rekap" style="margin-top:8px">
+            <i data-lucide="search" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i>
+            LIHAT REKAP
+          </button>
+        </div>
+
+        <div id="custom-rekap-result" style="display:none">
+          <!-- Orange Card -->
+          <div class="rekap-card orange">
+            <div class="rekap-period" id="custom-period"></div>
+            <div class="rekap-label">Total Pengeluaran</div>
+            <div class="rekap-amount" id="custom-total">Rp0</div>
+            <div class="rekap-count" id="custom-count">0 Transaksi</div>
+          </div>
+
+          <!-- Pie Chart -->
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Distribusi Kategori</span>
+            </div>
+            <div class="pie-container">
+              <canvas id="chart-pie" height="200"></canvas>
+            </div>
+          </div>
+
+          <!-- Category Breakdown -->
+          <div class="section-header" style="padding-top:0">
+            <span class="section-title">Ringkasan Kategori</span>
+          </div>
+          <div class="category-list" id="custom-categories">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: STATISTIK -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-statistik">
+        <div class="screen-header">
+          <button class="back-btn" data-back="screen-beranda">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <span class="header-title">Statistik</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <!-- Period Tabs -->
+        <div class="tab-bar" id="stat-tabs">
+          <button class="tab-item" data-tab="daily">Harian</button>
+          <button class="tab-item" data-tab="weekly">Mingguan</button>
+          <button class="tab-item active" data-tab="monthly">Bulanan</button>
+          <button class="tab-item" data-tab="yearly">Tahunan</button>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <span class="chart-title" id="chart-stat-title">Statistik</span>
+            <div class="chart-legend">
+              <div class="chart-legend-item">
+                <div class="chart-legend-dot" style="background:#22C55E"></div>
+                <span>Pemasukan</span>
+              </div>
+              <div class="chart-legend-item">
+                <div class="chart-legend-dot" style="background:#EF4444"></div>
+                <span>Pengeluaran</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="chart-statistik" height="200"></canvas>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="section-header" style="padding-top:4px">
+          <span class="section-title">Statistik Cepat</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#FEE2E2;color:#EF4444">
+              <i data-lucide="trending-down" style="width:18px;height:18px"></i>
+            </div>
+            <div class="stat-label">Pengeluaran Terbesar</div>
+            <div class="stat-value" id="stat-biggest-expense">Rp0</div>
+            <div class="stat-detail" id="stat-biggest-expense-detail">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#FEF3C7;color:#D97706">
+              <i data-lucide="tag" style="width:18px;height:18px"></i>
+            </div>
+            <div class="stat-label">Kategori Terbanyak</div>
+            <div class="stat-value" id="stat-top-category">-</div>
+            <div class="stat-detail" id="stat-top-category-detail">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#DBEAFE;color:#3B82F6">
+              <i data-lucide="calculator" style="width:18px;height:18px"></i>
+            </div>
+            <div class="stat-label">Rata-rata Harian</div>
+            <div class="stat-value" id="stat-daily-avg">Rp0</div>
+            <div class="stat-detail">30 hari terakhir</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#D1FAE5;color:#059669">
+              <i data-lucide="hash" style="width:18px;height:18px"></i>
+            </div>
+            <div class="stat-label">Total Transaksi</div>
+            <div class="stat-value" id="stat-total-tx">0</div>
+            <div class="stat-detail">Semua waktu</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: AKUN -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-akun">
+        <div class="screen-header">
+          <span class="header-title">Akun</span>
+          <div style="width:36px"></div>
+        </div>
+
+        <div class="account-header">
+          <div class="account-avatar">
+            <i data-lucide="user" style="width:36px;height:36px"></i>
+          </div>
+          <div class="account-name">Pengguna</div>
+          <div class="account-email">catatan.uang@personal</div>
+        </div>
+
+        <div class="settings-list">
+          <div class="settings-item" onclick="navigateTo('screen-whatsapp')">
+            <div class="settings-icon" style="background:#D1FAE5;color:#059669">
+              <i data-lucide="message-circle" style="width:20px;height:20px"></i>
+            </div>
+            <span class="settings-label">Notifikasi WhatsApp</span>
+            <i data-lucide="chevron-right" class="settings-arrow" style="width:18px;height:18px"></i>
+          </div>
+          <div class="settings-item" onclick="syncNow()">
+            <div class="settings-icon" style="background:#DBEAFE;color:#3B82F6">
+              <i data-lucide="download-cloud" style="width:20px;height:20px"></i>
+            </div>
+            <span class="settings-label">Sinkronisasi Data</span>
+            <i data-lucide="chevron-right" class="settings-arrow" style="width:18px;height:18px"></i>
+          </div>
+          <div class="settings-item" onclick="exportToCSV()">
+            <div class="settings-icon" style="background:#FEF3C7;color:#D97706">
+              <i data-lucide="file-spreadsheet" style="width:20px;height:20px"></i>
+            </div>
+            <span class="settings-label">Export ke CSV</span>
+            <i data-lucide="chevron-right" class="settings-arrow" style="width:18px;height:18px"></i>
+          </div>
+          <div class="settings-item" onclick="showToast('Fitur Tema & Tampilan segera hadir!', 'info')">
+            <div class="settings-icon" style="background:#EDE9FE;color:#7C3AED">
+              <i data-lucide="palette" style="width:20px;height:20px"></i>
+            </div>
+            <span class="settings-label">Tema & Tampilan</span>
+            <i data-lucide="chevron-right" class="settings-arrow" style="width:18px;height:18px"></i>
+          </div>
+          <div class="settings-item" onclick="showToast('Fitur Keamanan & Privasi segera hadir!', 'info')">
+            <div class="settings-icon" style="background:#FCE7F3;color:#DB2777">
+              <i data-lucide="shield" style="width:20px;height:20px"></i>
+            </div>
+            <span class="settings-label">Keamanan & Privasi</span>
+            <i data-lucide="chevron-right" class="settings-arrow" style="width:18px;height:18px"></i>
+          </div>
+          <div class="settings-item" onclick="showToast('Catatan Uang v1.0.0 — Personal Finance Tracker', 'info')">
+            <div class="settings-icon" style="background:#F3F4F6;color:#6B7280">
+              <i data-lucide="info" style="width:20px;height:20px"></i>
+            </div>
+            <span class="settings-label">Tentang Aplikasi</span>
+            <i data-lucide="chevron-right" class="settings-arrow" style="width:18px;height:18px"></i>
+          </div>
+        </div>
+
+        <div style="text-align:center;padding:24px;color:var(--gray-300);font-size:12px">
+          Catatan Uang v1.0.0
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SCREEN: WHATSAPP PREVIEW -->
+      <!-- ============================================================ -->
+      <div class="screen" id="screen-whatsapp">
+        <div class="wa-header">
+          <button class="back-btn" data-back="screen-beranda" style="background:rgba(255,255,255,0.15);color:white">
+            <i data-lucide="chevron-left" style="width:20px;height:20px"></i>
+          </button>
+          <div class="wa-avatar">
+            <i data-lucide="bot" style="width:22px;height:22px;color:white"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:15px">Catatan Uang Bot</div>
+            <div style="font-size:11px;opacity:0.8">online</div>
+          </div>
+        </div>
+
+        <div class="wa-preview">
+          <!-- Transaction Notification -->
+          <div class="wa-bubble">
+            <div class="wa-title">💸 Pengeluaran Baru</div>
+            <div class="wa-line"><span class="wa-label">Kategori</span><span class="wa-value">Makanan & Minuman</span></div>
+            <div class="wa-line"><span class="wa-label">Keterangan</span><span class="wa-value">Makan siang di warteg</span></div>
+            <div class="wa-line"><span class="wa-label">Nominal</span><span class="wa-value" style="color:#EF4444">Rp25.000</span></div>
+            <div class="wa-line"><span class="wa-label">Tanggal</span><span class="wa-value">12 Jul 2026</span></div>
+            <div class="wa-line"><span class="wa-label">Jam</span><span class="wa-value">12:30</span></div>
+            <div class="wa-divider"></div>
+            <div class="wa-line"><span class="wa-label">🏦 Saldo</span><span class="wa-value" style="color:#16A34A;font-weight:700">Rp12.465.000</span></div>
+            <div class="wa-time">14:30 ✓✓</div>
+          </div>
+
+          <!-- Daily Recap -->
+          <div class="wa-bubble">
+            <div class="wa-title">📊 Rekap Hari Ini</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px">12 Juli 2026</div>
+            <div class="wa-divider"></div>
+            <div class="wa-line"><span class="wa-label">💸 Pengeluaran</span><span class="wa-value" style="color:#EF4444">Rp185.000</span></div>
+            <div class="wa-line"><span class="wa-label">💰 Pemasukan</span><span class="wa-value" style="color:#16A34A">Rp0</span></div>
+            <div class="wa-line"><span class="wa-label">🔢 Transaksi</span><span class="wa-value">6</span></div>
+            <div class="wa-divider"></div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px">📋 Rincian Kategori:</div>
+            <div style="font-size:12px;line-height:1.8;color:var(--gray-600)">
+              • Makanan & Minuman — Rp70.000<br>
+              • Transportasi — Rp50.000<br>
+              • Rokok — Rp15.000<br>
+              • Belanja — Rp30.000<br>
+              • Lainnya — Rp20.000
+            </div>
+            <div class="wa-divider"></div>
+            <div class="wa-line"><span class="wa-label">🏦 Saldo</span><span class="wa-value" style="color:#16A34A;font-weight:700">Rp12.465.000</span></div>
+            <div style="font-size:12px;color:var(--gray-400);font-style:italic;margin-top:8px">Tetap bijak dalam mengelola keuangan! 🙌</div>
+            <div class="wa-time">21:00 ✓✓</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /app-content -->
+
+    <!-- ============================================================ -->
+    <!-- FILTER MODAL -->
+    <!-- ============================================================ -->
+    <div class="filter-modal" id="filter-modal" style="display:none">
+      <div class="filter-modal-backdrop" onclick="closeFilterModal()"></div>
+      <div class="filter-modal-content">
+        <div class="filter-modal-header">
+          <span class="filter-modal-title">Filter Transaksi</span>
+          <button class="icon-btn" onclick="closeFilterModal()">
+            <i data-lucide="x" style="width:20px;height:20px;color:var(--gray-500)"></i>
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Jenis</label>
+          <select class="input-field" id="filter-jenis">
+            <option value="">Semua</option>
+            <option value="Pemasukan">Pemasukan</option>
+            <option value="Pengeluaran">Pengeluaran</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori</label>
+          <select class="input-field" id="filter-kategori">
+            <option value="">Semua Kategori</option>
+            <option value="Makanan & Minuman">Makanan & Minuman</option>
+            <option value="Transportasi">Transportasi</option>
+            <option value="Belanja">Belanja</option>
+            <option value="Tagihan">Tagihan</option>
+            <option value="Rokok">Rokok</option>
+            <option value="Hiburan">Hiburan</option>
+            <option value="Kesehatan">Kesehatan</option>
+            <option value="Pendidikan">Pendidikan</option>
+            <option value="Gaji">Gaji</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <div class="form-group">
+            <label class="form-label">Dari Tanggal</label>
+            <input type="date" class="input-field" id="filter-start-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sampai</label>
+            <input type="date" class="input-field" id="filter-end-date">
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-outline" onclick="resetFilters()">Reset</button>
+          <button class="btn-primary" onclick="applyFilters()" style="flex:1">Terapkan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- CONFIRM DELETE MODAL -->
+    <!-- ============================================================ -->
+    <div class="filter-modal" id="confirm-delete-modal" style="display:none">
+      <div class="filter-modal-backdrop" onclick="closeDeleteModal()"></div>
+      <div class="filter-modal-content" style="text-align:center">
+        <div style="font-size:48px;margin-bottom:12px">🗑️</div>
+        <div style="font-size:16px;font-weight:700;color:var(--gray-800);margin-bottom:8px">Hapus Transaksi?</div>
+        <div style="font-size:13px;color:var(--gray-500);margin-bottom:20px">Transaksi yang dihapus tidak bisa dikembalikan.</div>
+        <div class="filter-actions">
+          <button class="btn-outline" onclick="closeDeleteModal()">Batal</button>
+          <button class="btn-delete" id="btn-confirm-delete" style="flex:1">Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- BOTTOM NAVIGATION -->
+    <!-- ============================================================ -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" data-screen="screen-beranda">
+        <i data-lucide="home" class="nav-icon" style="width:22px;height:22px"></i>
+        <span class="nav-label">Beranda</span>
+      </button>
+      <button class="nav-item" data-screen="screen-transaksi">
+        <i data-lucide="repeat" class="nav-icon" style="width:22px;height:22px"></i>
+        <span class="nav-label">Transaksi</span>
+      </button>
+      <button class="fab-button" id="fab-add">
+        <i data-lucide="plus" style="width:24px;height:24px"></i>
+      </button>
+      <button class="nav-item" data-screen="screen-rekap">
+        <i data-lucide="bar-chart-3" class="nav-icon" style="width:22px;height:22px"></i>
+        <span class="nav-label">Rekap</span>
+      </button>
+      <button class="nav-item" data-screen="screen-akun">
+        <i data-lucide="user" class="nav-icon" style="width:22px;height:22px"></i>
+        <span class="nav-label">Akun</span>
+      </button>
+    </nav>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+  </div><!-- /app-container -->
+
+  <!-- App Script -->
+  <script src="js/app.js"></script>
+</body>
+</html>
