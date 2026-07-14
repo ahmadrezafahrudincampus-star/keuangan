@@ -6,7 +6,7 @@
  */
 
 // ─── KONFIGURASI ────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycby0bo3DOd8sAixRbGVpuqOgSCMYOFOwVaGPRPocjB6kM11FgqfFr_bnB8bwBGlVQnmC/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby0bo3Dfv7yPRxjcd6cIHjdaADhW5kcrZwxv2a6u3vbUPGuCIvWvWQBN354IEO1luIQfQ/exec';
 const DB_NAME = 'CatatanUangDB';
 const DB_VERSION = 1;
 const STORE_TX = 'transactions';
