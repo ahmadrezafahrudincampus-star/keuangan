@@ -3,7 +3,7 @@
 // Cache-first for static assets, network-first for API
 // ============================================================
 
-const CACHE_NAME = 'catatan-uang-v7';
+const CACHE_NAME = 'catatan-uang-v8';
 const STATIC_ASSETS = [
   './',
   './index.html',

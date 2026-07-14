@@ -167,6 +167,7 @@ function navigateTo(screenId) {
     case 'screen-tambah': setupAddForm(); break;
     case 'screen-rekap': renderRekapTab('hariIni'); break;
     case 'screen-statistik': renderStatistik('monthly'); break;
+    case 'screen-whatsapp': renderWaBotPreview(); break;
   }
 
   // Re-init Lucide icons
@@ -208,6 +209,101 @@ function showDashboardLoading() {
       <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"><div class="skeleton-line w60"></div><div class="skeleton-line w40"></div></div><div class="skeleton-amount"></div></div>
     </div>`;
   }
+}
+
+function renderWaBotPreview() {
+  const container = document.getElementById('wa-preview-container');
+  if (!container) return;
+
+  if (transactions.length === 0) {
+    container.innerHTML = `
+      <div class="wa-bubble" style="text-align: center; padding: 24px; font-style: italic; color: var(--gray-500)">
+        <div style="font-size: 32px; margin-bottom: 12px">🤖</div>
+        <div style="font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 8px">Belum Ada Riwayat Laporan</div>
+        <div style="font-size: 12px; line-height: 1.6; color: var(--gray-400)">Mulai catat transaksi Anda di aplikasi ini. Setelah terhubung dengan WhatsApp Bot di laptop, notifikasi transaksi baru dan rekap harian Anda akan dikirim ke WhatsApp Anda seperti simulasi di bawah ini!</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Get current balance
+  let saldo = 0;
+  transactions.forEach(t => {
+    if (t.jenis === 'Pemasukan') saldo += t.nominal;
+    else saldo -= t.nominal;
+  });
+
+  // Get most recent transaction
+  const sorted = [...transactions].sort((a, b) => {
+    const dc = (b.tanggal || '').localeCompare(a.tanggal || '');
+    return dc !== 0 ? dc : (b.jam || '').localeCompare(a.jam || '');
+  });
+  const t = sorted[0];
+
+  const formatTanggalIndo = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const isExpense = t.jenis === 'Pengeluaran';
+  const valColor = isExpense ? '#EF4444' : '#16A34A';
+  const emoji = isExpense ? '💸' : '💰';
+
+  let html = `
+    <!-- Transaction Notification -->
+    <div class="wa-bubble">
+      <div class="wa-title">${emoji} ${t.jenis} Baru</div>
+      <div class="wa-line"><span class="wa-label">Kategori</span><span class="wa-value">${sanitize(t.kategori)}</span></div>
+      <div class="wa-line"><span class="wa-label">Keterangan</span><span class="wa-value">${sanitize(t.keterangan)}</span></div>
+      <div class="wa-line"><span class="wa-label">Nominal</span><span class="wa-value" style="color:${valColor}">${formatCurrency(t.nominal)}</span></div>
+      <div class="wa-line"><span class="wa-label">Tanggal</span><span class="wa-value">${formatTanggalIndo(t.tanggal)}</span></div>
+      <div class="wa-line"><span class="wa-label">Jam</span><span class="wa-value">${(t.jam || '').substring(0, 5)}</span></div>
+      <div class="wa-divider"></div>
+      <div class="wa-line"><span class="wa-label">🏦 Saldo</span><span class="wa-value" style="color:${saldo < 0 ? '#EF4444' : '#16A34A'};font-weight:700">${(saldo < 0 ? '-' : '') + formatCurrency(saldo)}</span></div>
+      <div class="wa-time">${(t.jam || '12:00').substring(0, 5)} ✓✓</div>
+    </div>
+  `;
+
+  // Daily Recap for the most recent transaction date
+  const recapDate = t.tanggal;
+  const dayTxs = transactions.filter(tx => tx.tanggal === recapDate);
+  const totalPengeluaran = dayTxs.filter(tx => tx.jenis === 'Pengeluaran').reduce((s, tx) => s + tx.nominal, 0);
+  const totalPemasukan = dayTxs.filter(tx => tx.jenis === 'Pemasukan').reduce((s, tx) => s + tx.nominal, 0);
+
+  const katMap = {};
+  dayTxs.filter(tx => tx.jenis === 'Pengeluaran').forEach(tx => {
+    katMap[tx.kategori] = (katMap[tx.kategori] || 0) + tx.nominal;
+  });
+  const katDetails = Object.entries(katMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([kat, total]) => `• ${kat} — ${formatCurrency(total)}`)
+    .join('<br>');
+
+  html += `
+    <!-- Daily Recap -->
+    <div class="wa-bubble">
+      <div class="wa-title">📊 Rekap Hari Ini</div>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px">${formatTanggalIndo(recapDate)}</div>
+      <div class="wa-divider"></div>
+      <div class="wa-line"><span class="wa-label">💸 Pengeluaran</span><span class="wa-value" style="color:#EF4444">${formatCurrency(totalPengeluaran)}</span></div>
+      <div class="wa-line"><span class="wa-label">💰 Pemasukan</span><span class="wa-value" style="color:#16A34A">${formatCurrency(totalPemasukan)}</span></div>
+      <div class="wa-line"><span class="wa-label">🔢 Transaksi</span><span class="wa-value">${dayTxs.length}</span></div>
+      ${katDetails ? `
+      <div class="wa-divider"></div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px">📋 Rincian Kategori:</div>
+      <div style="font-size:12px;line-height:1.8;color:var(--gray-600)">
+        ${katDetails}
+      </div>
+      ` : ''}
+      <div class="wa-divider"></div>
+      <div class="wa-line"><span class="wa-label">🏦 Saldo</span><span class="wa-value" style="color:${saldo < 0 ? '#EF4444' : '#16A34A'};font-weight:700">${(saldo < 0 ? '-' : '') + formatCurrency(saldo)}</span></div>
+      <div style="font-size:12px;color:var(--gray-400);font-style:italic;margin-top:8px">Tetap bijak dalam mengelola keuangan! 🙌</div>
+      <div class="wa-time">21:00 ✓✓</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
 
 // ─── ONLINE/OFFLINE STATUS ──────────────────────────────────
