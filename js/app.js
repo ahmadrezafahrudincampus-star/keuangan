@@ -379,7 +379,7 @@ function setupAddForm() {
 function saveTransaction() {
   const kategori = document.getElementById('input-kategori').value;
   const keterangan = document.getElementById('input-keterangan').value.trim();
-  const nominal = parseFloat(document.getElementById('input-nominal').value);
+  const nominal = parseFloat(document.getElementById('input-nominal').value.replace(/\./g, ''));
   const tanggal = document.getElementById('input-tanggal').value;
   const jam = document.getElementById('input-jam').value || nowTimeStr();
   const catatan = document.getElementById('input-catatan').value.trim();
@@ -447,7 +447,7 @@ function editTransaction(id) {
 
   document.getElementById('edit-transaction-id').value = tx.id;
   document.getElementById('edit-keterangan').value = tx.keterangan;
-  document.getElementById('edit-nominal').value = tx.nominal;
+  document.getElementById('edit-nominal').value = tx.nominal ? tx.nominal.toLocaleString('id-ID') : '';
   document.getElementById('edit-tanggal').value = tx.tanggal;
   document.getElementById('edit-jam').value = (tx.jam || '').substring(0, 5);
   document.getElementById('edit-catatan').value = tx.catatan || '';
@@ -468,7 +468,7 @@ function saveEditTransaction() {
   const id = document.getElementById('edit-transaction-id').value;
   const kategori = document.getElementById('edit-kategori').value;
   const keterangan = document.getElementById('edit-keterangan').value.trim();
-  const nominal = parseFloat(document.getElementById('edit-nominal').value);
+  const nominal = parseFloat(document.getElementById('edit-nominal').value.replace(/\./g, ''));
   const tanggal = document.getElementById('edit-tanggal').value;
   const jam = document.getElementById('edit-jam').value || nowTimeStr();
   const catatan = document.getElementById('edit-catatan').value.trim();
@@ -1224,9 +1224,27 @@ function setupDateInputs() {
   });
 }
 
+function setupNominalInputs() {
+  const inputs = ['input-nominal', 'edit-nominal'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', (e) => {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value) {
+        const num = parseInt(value, 10);
+        e.target.value = num.toLocaleString('id-ID');
+      } else {
+        e.target.value = '';
+      }
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Limit year input to 4 digits
   setupDateInputs();
+  setupNominalInputs();
 
   // Register Service Worker
   if ('serviceWorker' in navigator) {
