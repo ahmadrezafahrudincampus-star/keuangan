@@ -61,7 +61,8 @@ function generateId() {
 }
 
 /**
- * Hitung saldo saat ini (total pemasukan - total pengeluaran).
+ * Hitung saldo bulan aktif (pemasukan - pengeluaran bulan ini saja).
+ * Digunakan di dashboard dan notifikasi agar konsisten dengan konsep periode bulanan.
  */
 function calculateSaldo() {
   var sheet = getSheet();
@@ -71,6 +72,34 @@ function calculateSaldo() {
   var data = sheet.getRange(2, 1, lastRow - 1, HEADER_ROW.length).getValues();
   var saldo = 0;
   for (var i = 0; i < data.length; i++) {
+    var nominal = parseFloat(data[i][COL.NOMINAL]) || 0;
+    if (data[i][COL.JENIS] === 'Pemasukan') {
+      saldo += nominal;
+    } else if (data[i][COL.JENIS] === 'Pengeluaran') {
+      saldo -= nominal;
+    }
+  }
+  return saldo;
+}
+
+/**
+ * Hitung saldo bulan aktif saja (bukan kumulatif semua waktu).
+ * Periode ditentukan dari tanggal transaksi: t.tanggal.substring(0, 7) === 'YYYY-MM'
+ */
+function calculateSaldoBulanIni() {
+  var sheet = getSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return 0;
+
+  var periodeAktif = Utilities.formatDate(getNow(), TIMEZONE, 'yyyy-MM');
+  var data = sheet.getRange(2, 1, lastRow - 1, HEADER_ROW.length).getValues();
+  var saldo = 0;
+
+  for (var i = 0; i < data.length; i++) {
+    var tanggalVal = data[i][COL.TANGGAL];
+    var tanggalStr = tanggalVal instanceof Date ? formatDate(tanggalVal) : String(tanggalVal);
+    if (tanggalStr.substring(0, 7) !== periodeAktif) continue;
+
     var nominal = parseFloat(data[i][COL.NOMINAL]) || 0;
     if (data[i][COL.JENIS] === 'Pemasukan') {
       saldo += nominal;
@@ -405,8 +434,8 @@ function handleCreateTransaction(body) {
     var newRow = [no, id, tanggal, jam, jenis, body.kategori, body.keterangan, nominal, catatan, timestamp, statusSync];
     sheet.appendRow(newRow);
 
-    // Hitung saldo terbaru
-    var saldoSaatIni = calculateSaldo();
+    // Hitung saldo bulan aktif (konsisten dengan dashboard)
+    var saldoSaatIni = calculateSaldoBulanIni();
 
     var transaksi = {
       no: no,
@@ -614,28 +643,25 @@ function handleGetDashboard(e) {
     var now = getNow();
     var todayStr = formatDate(now);
 
-    // Bulan ini
-    var thisMonthStart = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
-
     var saldoSaatIni = 0;
     var pemasukanBulanIni = 0;
     var pengeluaranBulanIni = 0;
     var totalHariIni = 0;
 
+    // periodeAktif = 'YYYY-MM', saldo dihitung hanya dari bulan aktif
+    var periodeAktif = todayStr.substring(0, 7);
+
     for (var i = 0; i < allTransactions.length; i++) {
       var t = allTransactions[i];
-      // Saldo keseluruhan
-      if (t.jenis === 'Pemasukan') {
-        saldoSaatIni += t.nominal;
-      } else {
-        saldoSaatIni -= t.nominal;
-      }
+      var tPeriode = (t.tanggal || '').substring(0, 7);
 
-      // Bulan ini
-      if (t.tanggal >= thisMonthStart && t.tanggal <= todayStr) {
+      // Hanya hitung transaksi yang masuk bulan aktif
+      if (tPeriode === periodeAktif) {
         if (t.jenis === 'Pemasukan') {
+          saldoSaatIni += t.nominal;
           pemasukanBulanIni += t.nominal;
-        } else {
+        } else if (t.jenis === 'Pengeluaran') {
+          saldoSaatIni -= t.nominal;
           pengeluaranBulanIni += t.nominal;
         }
       }

@@ -226,11 +226,14 @@ function renderWaBotPreview() {
     return;
   }
 
-  // Get current balance
+  // Saldo WA = bulan aktif saja, konsisten dengan dashboard
+  const currentMonth = todayStr().substring(0, 7);
   let saldo = 0;
   transactions.forEach(t => {
-    if (t.jenis === 'Pemasukan') saldo += t.nominal;
-    else saldo -= t.nominal;
+    if (t.tanggal && t.tanggal.startsWith(currentMonth)) {
+      if (t.jenis === 'Pemasukan') saldo += t.nominal;
+      else saldo -= t.nominal;
+    }
   });
 
   // Get most recent transaction
@@ -326,15 +329,15 @@ function renderDashboard() {
   const today = todayStr();
   const month = today.substring(0, 7);
 
-  let saldo = 0, pemasukanBulan = 0, pengeluaranBulan = 0;
+  // Saldo dihitung hanya dari bulan aktif (periode bulanan independen)
+  let pemasukanBulan = 0, pengeluaranBulan = 0;
   transactions.forEach(t => {
-    if (t.jenis === 'Pemasukan') saldo += t.nominal;
-    else saldo -= t.nominal;
     if (t.tanggal && t.tanggal.startsWith(month)) {
       if (t.jenis === 'Pemasukan') pemasukanBulan += t.nominal;
       else pengeluaranBulan += t.nominal;
     }
   });
+  const saldo = pemasukanBulan - pengeluaranBulan;
 
   const saldoEl = document.getElementById('saldo-amount');
   saldoEl.textContent = (saldo < 0 ? '-' : '') + formatCurrency(saldo);
